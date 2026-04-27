@@ -1,0 +1,32 @@
+bundle:
+  name: inspectiq
+
+variables:
+  catalog:
+    description: Unity Catalog for InspectIQ tables, volumes, models, and views.
+    default: mbi_demo
+  schema:
+    description: Schema inside the catalog.
+    default: inspectiq
+  warehouse_id:
+    description: SQL warehouse used by the app, dashboard, and Genie space.
+    default: 4b9b953939869799
+  vector_search_endpoint:
+    description: Vector Search endpoint that hosts the doc_index.
+    default: mbi-inspectiq-vs
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/inspectiq/prod

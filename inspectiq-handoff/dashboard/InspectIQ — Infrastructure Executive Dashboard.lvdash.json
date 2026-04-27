@@ -1,0 +1,1307 @@
+{
+  "datasets": [
+    {
+      "name": "ds_assets_enriched",
+      "displayName": "Assets (enriched)",
+      "queryLines": [
+        "SELECT\n",
+        "\n",
+        "  report_id, project_name, inspection_type, state,\n",
+        "\n",
+        "  CASE state\n",
+        "\n",
+        "    WHEN 'PA' THEN 'Mid-Atlantic'  WHEN 'NJ' THEN 'Mid-Atlantic'\n",
+        "\n",
+        "    WHEN 'DE' THEN 'Mid-Atlantic'  WHEN 'MD' THEN 'Mid-Atlantic'\n",
+        "\n",
+        "    WHEN 'NY' THEN 'Northeast'     WHEN 'MA' THEN 'Northeast'\n",
+        "\n",
+        "    WHEN 'CT' THEN 'Northeast'     WHEN 'VA' THEN 'Southeast'\n",
+        "\n",
+        "    WHEN 'NC' THEN 'Southeast'     WHEN 'GA' THEN 'Southeast'\n",
+        "\n",
+        "    WHEN 'FL' THEN 'Southeast'     WHEN 'OH' THEN 'Midwest'\n",
+        "\n",
+        "    WHEN 'IL' THEN 'Midwest'       WHEN 'MI' THEN 'Midwest'\n",
+        "\n",
+        "    WHEN 'TX' THEN 'Southwest'     WHEN 'CO' THEN 'Southwest'\n",
+        "\n",
+        "    WHEN 'CA' THEN 'Pacific'       WHEN 'WA' THEN 'Pacific'\n",
+        "\n",
+        "    ELSE 'Other'\n",
+        "\n",
+        "  END AS region,\n",
+        "\n",
+        "  client, condition_category, condition_rating, priority,\n",
+        "\n",
+        "  overdue, safety_flagged, nbis_deficient,\n",
+        "\n",
+        "  estimated_repair_cost, days_overdue, inspection_date,\n",
+        "\n",
+        "  DATE_TRUNC('MONTH', inspection_date) AS inspection_month,\n",
+        "\n",
+        "  CASE\n",
+        "\n",
+        "    WHEN overdue = false OR days_overdue IS NULL OR days_overdue <= 0 THEN 'On schedule'\n",
+        "\n",
+        "    WHEN days_overdue <= 30 THEN '1-30 days'\n",
+        "\n",
+        "    WHEN days_overdue <= 90 THEN '31-90 days'\n",
+        "\n",
+        "    WHEN days_overdue <= 180 THEN '91-180 days'\n",
+        "\n",
+        "    ELSE '180+ days'\n",
+        "\n",
+        "  END AS days_overdue_bucket,\n",
+        "\n",
+        "  CASE WHEN overdue = true AND safety_flagged = true THEN 1 ELSE 0 END AS overdue_and_safety_flag,\n",
+        "\n",
+        "  CASE WHEN condition_category IN ('Critical','Poor') THEN 1 ELSE 0 END AS needs_action_flag,\n",
+        "  CASE WHEN overdue = true THEN days_overdue END AS days_overdue_when_overdue,\n",
+        "\n",
+        "  CASE WHEN safety_flagged = true THEN 1 ELSE 0 END AS safety_flag_int,\n",
+        "\n",
+        "  CASE WHEN nbis_deficient = true THEN 1 ELSE 0 END AS nbis_flag_int,\n",
+        "\n",
+        "  CASE WHEN overdue = true THEN 1 ELSE 0 END AS overdue_flag_int\n",
+        "\n",
+        "FROM mbi_demo.inspectiq.project_assets"
+      ]
+    },
+    {
+      "name": "ds_metrics_portfolio",
+      "displayName": "Metric View: Asset Portfolio (Semantic Layer)",
+      "queryLines": [
+        "SELECT\n",
+        "  inspection_type,\n",
+        "  condition_category,\n",
+        "  state,\n",
+        "  client,\n",
+        "  MEASURE(asset_count)          AS asset_count,\n",
+        "  MEASURE(overdue_pct)          AS overdue_pct,\n",
+        "  MEASURE(safety_flagged_pct)   AS safety_flagged_pct,\n",
+        "  MEASURE(avg_condition_rating) AS avg_condition_rating,\n",
+        "  MEASURE(total_repair_cost)    AS total_repair_cost,\n",
+        "  MEASURE(nbis_deficient_count) AS nbis_deficient_count,\n",
+        "  MEASURE(avg_priority_score)   AS avg_priority_score\n",
+        "FROM mbi_demo.inspectiq.metrics_asset_portfolio\n",
+        "GROUP BY inspection_type, condition_category, state, client"
+      ]
+    },
+    {
+      "name": "ds_metrics_overdue",
+      "displayName": "Metric View: Overdue Risk (Semantic Layer)",
+      "queryLines": [
+        "SELECT\n",
+        "  state,\n",
+        "  inspection_type,\n",
+        "  priority,\n",
+        "  MEASURE(overdue_asset_count)        AS overdue_asset_count,\n",
+        "  MEASURE(avg_days_overdue)           AS avg_days_overdue,\n",
+        "  MEASURE(max_days_overdue)           AS max_days_overdue,\n",
+        "  MEASURE(total_overdue_cost)         AS total_overdue_cost,\n",
+        "  MEASURE(safety_flagged_overdue_count) AS safety_overdue_count,\n",
+        "  MEASURE(critical_overdue_count)     AS critical_overdue_count\n",
+        "FROM mbi_demo.inspectiq.metrics_overdue_risk\n",
+        "GROUP BY state, inspection_type, priority"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_filters",
+      "displayName": "Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "filter-region",
+            "queries": [
+              {
+                "name": "q_filter-region",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "region",
+                    "displayName": "Region",
+                    "queryName": "q_filter-region"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Region"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter-discipline",
+            "queries": [
+              {
+                "name": "q_filter-discipline",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "inspection_type",
+                      "expression": "`inspection_type`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "inspection_type",
+                    "displayName": "Discipline",
+                    "queryName": "q_filter-discipline"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Discipline"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter-condition",
+            "queries": [
+              {
+                "name": "q_filter-condition",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "condition_category",
+                      "expression": "`condition_category`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "condition_category",
+                    "displayName": "Condition",
+                    "queryName": "q_filter-condition"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Condition"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter-client",
+            "queries": [
+              {
+                "name": "q_filter-client",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "client",
+                      "expression": "`client`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "client",
+                    "displayName": "Client",
+                    "queryName": "q_filter-client"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Client"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter-priority",
+            "queries": [
+              {
+                "name": "q_filter-priority",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "priority",
+                      "expression": "`priority`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "priority",
+                    "displayName": "Priority",
+                    "queryName": "q_filter-priority"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Priority"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "filter-state",
+            "queries": [
+              {
+                "name": "q_filter-state",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "state",
+                      "expression": "`state`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "state",
+                    "displayName": "State",
+                    "queryName": "q_filter-state"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "State"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    },
+    {
+      "name": "page_executive",
+      "displayName": "Executive Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "hdr-title",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# InspectIQ \u2014 Infrastructure Executive Dashboard"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "hdr-sub",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Real-time portfolio health across structural steel, concrete, and asphalt \u00b7 Powered by `mbi_demo.inspectiq`"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-total",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "count(total)",
+                      "expression": "COUNT(`report_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(total)",
+                  "displayName": "Total Assets"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Total Assets"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-action",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(action)",
+                      "expression": "SUM(`needs_action_flag`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(action)",
+                  "displayName": "Critical + Poor (Action Queue)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Critical + Poor (Action Queue)"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-over",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(overdue)",
+                      "expression": "SUM(`overdue_flag_int`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(overdue)",
+                  "displayName": "Overdue Inspections"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Overdue Inspections"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-cost",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(cost)",
+                      "expression": "SUM(`estimated_repair_cost`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(cost)",
+                  "displayName": "Maintenance Backlog ($)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 0
+                    },
+                    "abbreviation": "compact"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Maintenance Backlog ($)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-safety",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(safety)",
+                      "expression": "SUM(`safety_flag_int`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(safety)",
+                  "displayName": "Safety-Flagged Assets"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Safety-Flagged Assets"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 5,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-nbis",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(nbis)",
+                      "expression": "SUM(`nbis_flag_int`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(nbis)",
+                  "displayName": "NBIS Deficient"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "NBIS Deficient"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 5,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "hdr-heatmap",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Asset Health Heatmap \u2014 Region \u00d7 Condition"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "heatmap-region-cond",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "condition_category",
+                      "expression": "`condition_category`"
+                    },
+                    {
+                      "name": "count(assets)",
+                      "expression": "COUNT(`report_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "region",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Region"
+                },
+                "y": {
+                  "fieldName": "condition_category",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  },
+                  "displayName": "Condition"
+                },
+                "color": {
+                  "fieldName": "count(assets)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Assets"
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Asset count by region and condition"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "hdr-compliance",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Inspection Backlog & Compliance Risk"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bar-days-overdue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "days_overdue_bucket",
+                      "expression": "`days_overdue_bucket`"
+                    },
+                    {
+                      "name": "count(assets)",
+                      "expression": "COUNT(`report_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "days_overdue_bucket",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  },
+                  "displayName": "days_overdue_bucket"
+                },
+                "y": {
+                  "fieldName": "count(assets)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "count(assets)"
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Days-Overdue Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#1a3a5c",
+                  "#e87722",
+                  "#c0392b",
+                  "#e67e22",
+                  "#f1c40f",
+                  "#27ae60"
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bar-discipline",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "inspection_type",
+                      "expression": "`inspection_type`"
+                    },
+                    {
+                      "name": "count(assets)",
+                      "expression": "COUNT(`report_id`)"
+                    },
+                    {
+                      "name": "condition_category",
+                      "expression": "`condition_category`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "inspection_type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  },
+                  "displayName": "inspection_type"
+                },
+                "y": {
+                  "fieldName": "count(assets)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "count(assets)"
+                },
+                "label": {
+                  "show": true
+                },
+                "color": {
+                  "fieldName": "condition_category",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Critical",
+                        "color": "#c0392b"
+                      },
+                      {
+                        "value": "Poor",
+                        "color": "#e67e22"
+                      },
+                      {
+                        "value": "Fair",
+                        "color": "#f1c40f"
+                      },
+                      {
+                        "value": "Good",
+                        "color": "#27ae60"
+                      }
+                    ]
+                  },
+                  "displayName": "condition_category"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Assets by Discipline \u00b7 Stacked by Condition"
+              },
+              "mark": {
+                "colors": [
+                  "#1a3a5c",
+                  "#e87722",
+                  "#c0392b",
+                  "#e67e22",
+                  "#f1c40f",
+                  "#27ae60"
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 15,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-over-safety",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "sum(over_safe)",
+                      "expression": "SUM(`overdue_and_safety_flag`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(over_safe)",
+                  "displayName": "Overdue + Safety (Highest Urgency)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Overdue + Safety (Highest Urgency)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-avg-days",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "avg_days_overdue",
+                      "expression": "AVG(`days_overdue_when_overdue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_days_overdue",
+                  "displayName": "Avg Days Overdue",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Days Overdue"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 20,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi-max-days",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "max_days_overdue",
+                      "expression": "MAX(`days_overdue_when_overdue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "max_days_overdue",
+                  "displayName": "Longest Overdue (days)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Longest Overdue (days)"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 20,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "hdr-trend",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Condition Rating Trend"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "line-trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "inspection_month",
+                      "expression": "`inspection_month`"
+                    },
+                    {
+                      "name": "count(assets)",
+                      "expression": "COUNT(`report_id`)"
+                    },
+                    {
+                      "name": "condition_category",
+                      "expression": "`condition_category`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "inspection_month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Inspection month"
+                },
+                "y": {
+                  "fieldName": "count(assets)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Inspections"
+                },
+                "color": {
+                  "fieldName": "condition_category",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Critical",
+                        "color": "#c0392b"
+                      },
+                      {
+                        "value": "Poor",
+                        "color": "#e67e22"
+                      },
+                      {
+                        "value": "Fair",
+                        "color": "#f1c40f"
+                      },
+                      {
+                        "value": "Good",
+                        "color": "#27ae60"
+                      }
+                    ]
+                  },
+                  "displayName": "Condition"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Inspections per month by condition category"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "hdr-top",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Highest-Priority Assets Requiring Action"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 29,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "tbl-top-risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_assets_enriched",
+                  "fields": [
+                    {
+                      "name": "report_id",
+                      "expression": "`report_id`"
+                    },
+                    {
+                      "name": "project_name",
+                      "expression": "`project_name`"
+                    },
+                    {
+                      "name": "inspection_type",
+                      "expression": "`inspection_type`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "state",
+                      "expression": "`state`"
+                    },
+                    {
+                      "name": "client",
+                      "expression": "`client`"
+                    },
+                    {
+                      "name": "condition_category",
+                      "expression": "`condition_category`"
+                    },
+                    {
+                      "name": "condition_rating",
+                      "expression": "`condition_rating`"
+                    },
+                    {
+                      "name": "days_overdue",
+                      "expression": "`days_overdue`"
+                    },
+                    {
+                      "name": "estimated_repair_cost",
+                      "expression": "`estimated_repair_cost`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "report_id",
+                    "displayName": "Report ID"
+                  },
+                  {
+                    "fieldName": "project_name",
+                    "displayName": "Project"
+                  },
+                  {
+                    "fieldName": "inspection_type",
+                    "displayName": "Discipline"
+                  },
+                  {
+                    "fieldName": "region",
+                    "displayName": "Region"
+                  },
+                  {
+                    "fieldName": "state",
+                    "displayName": "State"
+                  },
+                  {
+                    "fieldName": "client",
+                    "displayName": "Client"
+                  },
+                  {
+                    "fieldName": "condition_category",
+                    "displayName": "Condition"
+                  },
+                  {
+                    "fieldName": "condition_rating",
+                    "displayName": "Rating"
+                  },
+                  {
+                    "fieldName": "days_overdue",
+                    "displayName": "Days Overdue"
+                  },
+                  {
+                    "fieldName": "estimated_repair_cost",
+                    "displayName": "Repair Cost"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Assets ranked by action need"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 7
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

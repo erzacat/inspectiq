@@ -1,0 +1,357 @@
+{
+  "instructions": [
+    {
+      "id": "01f13ad74b991ac8957d65b2574aeaf0",
+      "instruction_id": "01f13ad74b991ac8957d65b2574aeaf0",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "What are the report IDs, project names, AI classifications of key findings, and key findings for inspection projects?",
+      "content": "SELECT\n    report_id,\n    project_name,\n    ai_classify(\n      key_findings,\n      ARRAY('Critical', 'Poor', 'Fair', 'Good')\n    ) AS ai_classified,\n    key_findings\n  FROM mbi_demo.inspectiq.project_assets\n  LIMIT 10",
+      "created_timestamp": 1776483178593,
+      "last_updated_timestamp": 1776483191275,
+      "instruction_type": "SQL_INSTRUCTION",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED",
+      "source": {
+        "source_type": "QUERY_INSIGHT_MINED_KNOWLEDGE",
+        "source_name": "mbi_demo.inspectiq.project_assets",
+        "source_id": "01f13a99-4a53-1a28-813f-674484549aee"
+      },
+      "instruction_source": {
+        "query_insight_mined_knowledge": {
+          "name": "mbi_demo.inspectiq.project_assets",
+          "id": "01f13a99-4a53-1a28-813f-674484549aee",
+          "score": 0.7,
+          "short_title": "AI Classification of Project Key Findings",
+          "referenced_table_identifiers": [
+            "mbi_demo.inspectiq.project_assets"
+          ]
+        }
+      }
+    },
+    {
+      "id": "01f13ad794651eb7818820f4dbed9b4f",
+      "instruction_id": "01f13ad794651eb7818820f4dbed9b4f",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"asset\":\"mbi_demo.inspectiq.inspection_findings\",\"alias\":\"inspection_findings\",\"join\":{\"asset\":\"mbi_demo.inspectiq.project_assets\",\"alias\":\"project_assets\",\"join_on\":\"`inspection_findings`.`report_id` = `project_assets`.`report_id`\",\"relationship_type\":\"FROM_RELATIONSHIP_TYPE_MANY_TO_ONE\",\"instruction\":\"Many findings roll up to one inspection report. Use whenever a question about findings needs asset-level context \u2014 project name, inspection type, client, state, condition rating, or repair cost. Example: \\\"Which states have the most safety-risk findings?\\\"\"}}",
+      "created_timestamp": 1776483300728,
+      "last_updated_timestamp": 1776483300728,
+      "instruction_type": "FROM_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad7dcc11fb1ad17de0368c55daf",
+      "instruction_id": "01f13ad7dcc11fb1ad17de0368c55daf",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "Notes",
+      "content": "You are the analytical brain for Michael Baker International's inspection portfolio.\nYour audience is engineering leadership, program managers, and executives.\n\nWHEN TO USE EACH DATA SOURCE:\n1. Portfolio-level percentages/rates/totals \u2192 metrics_asset_portfolio with MEASURE().\n   Example: \"What is the overdue percentage by discipline?\" \u2192\n     SELECT inspection_type, MEASURE(overdue_pct)\n     FROM mbi_demo.inspectiq.metrics_asset_portfolio\n     GROUP BY inspection_type;\n\n2. Overdue/backlog/compliance aggregates \u2192 metrics_overdue_risk with MEASURE().\n   Example: \"Which state has the highest average days overdue?\" \u2192\n     SELECT state, MEASURE(avg_days_overdue)\n     FROM mbi_demo.inspectiq.metrics_overdue_risk\n     GROUP BY state\n     ORDER BY MEASURE(avg_days_overdue) DESC;\n\n3. Row-level or specific-project questions \u2192 project_assets.\n4. Finding-level detail (defect type, severity, safety risks) \u2192 inspection_findings\n   joined to project_assets for asset context.\n5. Recommended repairs, cost estimates \u2192 corrective_actions joined to inspection_findings\n   (or shortcut-joined to project_assets for asset context only).\n6. Element-level breakdown (deck/beam/pier condition states) \u2192 element_conditions\n   joined to project_assets.\n\nFORMATTING RULES:\n- Currency: USD with thousands separators ($12,345,678).\n- Percentages: 1 decimal place (68.8%).\n- Condition ratings: 1\u20139 scale. Critical=1-3, Poor=4-5, Fair=6-7, Good=8-9.\n- Days overdue: integer.\n- For \"top N\" or \"highest/lowest\", include explicit ORDER BY.\n\nDOMAIN NOTES:\n- Disciplines: Structural Steel, Concrete, Asphalt. \"Asphalt\" and \"pavement\" are synonyms.\n- Client = MBI customer organization (DOTs, airport authorities, city public works).\n- NBIS deficient = fails National Bridge Inspection Standards compliance.\n- \"Overdue + safety-flagged\" is the highest-urgency cohort.",
+      "created_timestamp": 1776483422127,
+      "last_updated_timestamp": 1776483422127,
+      "instruction_type": "TEXT_INSTRUCTION",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13ad7e9331303a90f766bac44f40a",
+      "instruction_id": "01f13ad7e9331303a90f766bac44f40a",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"asset\":\"mbi_demo.inspectiq.corrective_actions\",\"alias\":\"corrective_actions\",\"join\":{\"asset\":\"mbi_demo.inspectiq.inspection_findings\",\"alias\":\"inspection_findings\",\"join_on\":\"`corrective_actions`.`finding_id` = `inspection_findings`.`finding_id`\",\"relationship_type\":\"FROM_RELATIONSHIP_TYPE_MANY_TO_ONE\",\"instruction\":\"Many corrective actions per one finding. Use when a question connects a repair recommendation to the finding it remediates \u2014 defect type, severity, cause of deterioration. Example: \\\"What are the recommended repair methods for freeze-thaw damage?\\\"\"}}",
+      "created_timestamp": 1776483443002,
+      "last_updated_timestamp": 1776483443002,
+      "instruction_type": "FROM_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad7f18512f89e03ba0519276c28",
+      "instruction_id": "01f13ad7f18512f89e03ba0519276c28",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"asset\":\"mbi_demo.inspectiq.corrective_actions\",\"alias\":\"corrective_actions\",\"join\":{\"asset\":\"mbi_demo.inspectiq.project_assets\",\"alias\":\"project_assets\",\"join_on\":\"`corrective_actions`.`report_id` = `project_assets`.`report_id`\",\"relationship_type\":\"FROM_RELATIONSHIP_TYPE_MANY_TO_ONE\",\"instruction\":\"Shortcut path from action straight to asset (skips findings). Use when only asset-level context is needed \u2014 project, client, state \u2014 without intermediate finding detail. Example: \\\"Which client has the highest total recommended repair cost?\\\"\"}}",
+      "created_timestamp": 1776483456961,
+      "last_updated_timestamp": 1776483456961,
+      "instruction_type": "FROM_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad7fa031622a9aa569dd9ab5465",
+      "instruction_id": "01f13ad7fa031622a9aa569dd9ab5465",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"asset\":\"mbi_demo.inspectiq.element_conditions\",\"alias\":\"element_conditions\",\"join\":{\"asset\":\"mbi_demo.inspectiq.project_assets\",\"alias\":\"project_assets\",\"join_on\":\"`element_conditions`.`report_id` = `project_assets`.`report_id`\",\"relationship_type\":\"FROM_RELATIONSHIP_TYPE_MANY_TO_ONE\",\"instruction\":\"Many elements per one inspection report. Use for element-level drill-down within an asset \u2014 which deck, beam, or pier is in which condition state. Example: \\\"For the Parker Street Overpass, show the element condition states.\\\"\"}}",
+      "created_timestamp": 1776483471210,
+      "last_updated_timestamp": 1776483471210,
+      "instruction_type": "FROM_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad805b513d2ad2374493a1503de",
+      "instruction_id": "01f13ad805b513d2ad2374493a1503de",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"asset\":\"mbi_demo.inspectiq.inspection_findings\",\"alias\":\"inspection_findings\",\"join\":{\"asset\":\"mbi_demo.inspectiq.element_conditions\",\"alias\":\"element_conditions\",\"join_on\":\"`inspection_findings`.`element_id` = `element_conditions`.`element_id`\",\"relationship_type\":\"FROM_RELATIONSHIP_TYPE_MANY_TO_ONE\",\"instruction\":\"Many findings can reference the same element within one report. Uses a composite key because element_id alone isn't unique across reports. Use when a question ties a specific finding to its element's condition-state percentages. Example: \\\"For each safety-risk finding on a pier element, show the condition-state distribution.\\\"\"}}",
+      "created_timestamp": 1776483490830,
+      "last_updated_timestamp": 1776483490830,
+      "instruction_type": "FROM_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad91b8a161eb9628c175b249953",
+      "instruction_id": "01f13ad91b8a161eb9628c175b249953",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_DERIVED\",\"display_name\":\"region\",\"code\":\"CASE project_assets.state\\n  WHEN 'PA' THEN 'Mid-Atlantic'  WHEN 'NJ' THEN 'Mid-Atlantic'\\n  WHEN 'DE' THEN 'Mid-Atlantic'  WHEN 'MD' THEN 'Mid-Atlantic'\\n  WHEN 'NY' THEN 'Northeast'     WHEN 'MA' THEN 'Northeast'\\n  WHEN 'CT' THEN 'Northeast'     WHEN 'VA' THEN 'Southeast'\\n  WHEN 'NC' THEN 'Southeast'     WHEN 'GA' THEN 'Southeast'\\n  WHEN 'FL' THEN 'Southeast'     WHEN 'OH' THEN 'Midwest'\\n  WHEN 'IL' THEN 'Midwest'       WHEN 'MI' THEN 'Midwest'\\n  WHEN 'TX' THEN 'Southwest'     WHEN 'CO' THEN 'Southwest'\\n  WHEN 'CA' THEN 'Pacific'       WHEN 'WA' THEN 'Pacific'\\n  ELSE 'Other'\\nEND\",\"instruction\":\"Roll up the two-letter US state code into a 6-region bucket (Mid-Atlantic, Northeast, Southeast, Midwest, Southwest, Pacific). Prefer region over raw state codes for executive-audience roll-ups. Use when the user asks about \\\"region\\\", \\\"territory\\\", \\\"area\\\", or compares groups of states.\",\"synonyms\":[\"region\",\"geographic region\",\"area\",\"territory\",\"zone\",\"regional grouping\",\"US region\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776483956956,
+      "last_updated_timestamp": 1776483956956,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad9249d1e12b8187a4a042dea81",
+      "instruction_id": "01f13ad9249d1e12b8187a4a042dea81",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_DERIVED\",\"display_name\":\"days_overdue_bucket\",\"code\":\"CASE\\n  WHEN project_assets.overdue = false\\n       OR project_assets.days_overdue IS NULL\\n       OR project_assets.days_overdue <= 0        THEN 'On schedule'\\n  WHEN project_assets.days_overdue <= 30          THEN '1-30 days'\\n  WHEN project_assets.days_overdue <= 90          THEN '31-90 days'\\n  WHEN project_assets.days_overdue <= 180         THEN '91-180 days'\\n  ELSE '180+ days'\\nEND\",\"instruction\":\"Categorize each asset by how far past its scheduled next inspection it is. Use for distribution views (\\\"days-overdue distribution\\\", \\\"how many assets are 90+ days overdue\\\"). Natural-order sorting should preserve the listed order: On schedule \u2192 1-30 days \u2192 31-90 days \u2192 91-180 days \u2192 180+ days.\",\"synonyms\":[\"overdue bucket\",\"days late bucket\",\"backlog bucket\",\"how overdue\",\"overdue band\",\"overdue tier\",\"lateness category\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776483972183,
+      "last_updated_timestamp": 1776483972183,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad92e291876ac08406f6c5171dd",
+      "instruction_id": "01f13ad92e291876ac08406f6c5171dd",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_MEASURE\",\"display_name\":\"overdue_pct\",\"code\":\"SUM(CASE WHEN project_assets.overdue = true THEN 1 ELSE 0 END) * 100.0\\n  / NULLIF(COUNT(*), 0)\",\"instruction\":\"Returns the percentage of assets in the selected scope that are past their scheduled next_inspection_date. Value ranges 0-100. Format with 1 decimal place (e.g., 68.8%). Use when the user asks for rate/percentage/share of overdue assets. For the same concept computed over the full portfolio via the governed semantic layer, prefer MEASURE(overdue_pct) on mbi_demo.inspectiq.metrics_asset_portfolio instead.\",\"synonyms\":[\"overdue percentage\",\"overdue rate\",\"percent overdue\",\"overdue %\",\"past due rate\",\"percent past due\",\"overdue share\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776483988198,
+      "last_updated_timestamp": 1776712398559,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad93602106c98acd446064450fa",
+      "instruction_id": "01f13ad93602106c98acd446064450fa",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_MEASURE\",\"display_name\":\"total_overdue_cost_exposure\",\"code\":\"SUM(CASE WHEN project_assets.overdue = true\\n         THEN project_assets.estimated_repair_cost\\n         ELSE 0 END)\",\"instruction\":\"Total estimated repair dollars tied to overdue assets only \u2014 the dollar exposure of the inspection backlog. Format as USD with thousands separators ($12,345,678). Use when the user asks for \\\"cost exposure\\\", \\\"dollars at risk\\\", \\\"total overdue cost\\\", or any dollar figure scoped to overdue assets. For the governed semantic layer equivalent, prefer MEASURE(total_overdue_cost) on mbi_demo.inspectiq.metrics_overdue_risk.\",\"synonyms\":[\"overdue cost exposure\",\"overdue repair cost\",\"cost at risk\",\"overdue dollar exposure\",\"overdue backlog dollars\",\"total cost of overdue work\",\"$ at risk\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776484001361,
+      "last_updated_timestamp": 1776484001361,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad93fbd1ff598d84731a0edaf55",
+      "instruction_id": "01f13ad93fbd1ff598d84731a0edaf55",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_EXAMPLE_FILTER\",\"display_name\":\"Highest urgency (overdue + safety)\",\"code\":\"project_assets.overdue = true AND project_assets.safety_flagged = true\",\"instruction\":\"Apply when a question asks for the \\\"most urgent\\\", \\\"highest urgency\\\", \\\"immediate action needed\\\", or combines overdue status with safety risk in any phrasing. This is the engineering leadership action queue \u2014 assets that are both past due for inspection AND already documented as having an active hazard. Do NOT apply for general \\\"overdue\\\" or general \\\"safety\\\" questions \u2014 only when both conditions are implied together.\",\"synonyms\":[\"highest urgency\",\"most urgent\",\"immediate action cohort\",\"overdue plus safety\",\"overdue hazards\",\"overdue safety flags\",\"critical backlog\",\"top priority\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776484017692,
+      "last_updated_timestamp": 1776484017692,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13ad94935127a82cb9a744a91f95a",
+      "instruction_id": "01f13ad94935127a82cb9a744a91f95a",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "",
+      "content": "{\"type\":\"SQL_SNIPPET_TYPE_EXAMPLE_FILTER\",\"display_name\":\"Critical or Poor condition\",\"code\":\"project_assets.condition_category IN ('Critical', 'Poor')\",\"instruction\":\"Apply when the user asks about assets that \\\"need action\\\", are \\\"deficient\\\", \\\"degraded\\\", \\\"in bad shape\\\", or explicitly mentions Critical or Poor conditions. Maps to FHWA condition ratings 1-5 (Critical = 1-3, Poor = 4-5). Do NOT apply for general \\\"condition\\\" queries where the user just wants a breakdown across all condition categories \u2014 only when urgency/deficiency is implied.\",\"synonyms\":[\"critical or poor\",\"needs action\",\"deficient\",\"worst condition\",\"degraded assets\",\"priority repairs\",\"action queue\",\"bad condition\",\"low rated\"],\"table_aliases\":[\"project_assets\"]}",
+      "created_timestamp": 1776484033573,
+      "last_updated_timestamp": 1776484033573,
+      "instruction_type": "SQL_SNIPPET",
+      "use_as_tool": false,
+      "instruction_status": "ACCEPTED"
+    },
+    {
+      "id": "01f13adc78ce124bb55cf853474be52b",
+      "instruction_id": "01f13adc78ce124bb55cf853474be52b",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "What is the overdue percentage and safety-flagged percentage by discipline?",
+      "content": "SELECT\n  inspection_type,\n  MEASURE(asset_count)          AS total_assets,\n  MEASURE(overdue_pct)          AS pct_overdue,\n  MEASURE(safety_flagged_pct)   AS pct_safety_flagged,\n  MEASURE(avg_condition_rating) AS avg_rating\nFROM mbi_demo.inspectiq.metrics_asset_portfolio\nGROUP BY inspection_type\nORDER BY pct_overdue DESC;",
+      "created_timestamp": 1776485401918,
+      "last_updated_timestamp": 1776485401918,
+      "instruction_type": "SQL_INSTRUCTION",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13adc7fbc10c9a248b4726f29d2f8",
+      "instruction_id": "01f13adc7fbc10c9a248b4726f29d2f8",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "Which assets are both overdue and safety-flagged, ranked by how late they are?",
+      "content": "SELECT\n  report_id,\n  project_name,\n  inspection_type,\n  state,\n  client,\n  condition_rating,\n  condition_category,\n  days_overdue,\n  estimated_repair_cost,\n  inspector\nFROM mbi_demo.inspectiq.project_assets\nWHERE overdue = true\n  AND safety_flagged = true\nORDER BY days_overdue DESC, estimated_repair_cost DESC;",
+      "created_timestamp": 1776485413544,
+      "last_updated_timestamp": 1776485413544,
+      "instruction_type": "SQL_INSTRUCTION",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13adc86441cd8b4dfd39810f28d8b",
+      "instruction_id": "01f13adc86441cd8b4dfd39810f28d8b",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "What are the top 10 most expensive findings and their recommended corrective actions?",
+      "content": "SELECT\n  p.report_id,\n  p.project_name,\n  p.inspection_type,\n  f.defect_type,\n  f.severity,\n  f.safety_risk,\n  ca.repair_method,\n  ca.urgency,\n  ca.estimated_cost\nFROM mbi_demo.inspectiq.corrective_actions  ca\nJOIN mbi_demo.inspectiq.inspection_findings f  ON ca.finding_id = f.finding_id\nJOIN mbi_demo.inspectiq.project_assets      p  ON f.report_id   = p.report_id\nORDER BY ca.estimated_cost DESC\nLIMIT 10;",
+      "created_timestamp": 1776485424506,
+      "last_updated_timestamp": 1776485424506,
+      "instruction_type": "SQL_INSTRUCTION",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13adc92a614608bdb5f399e7b4c2e",
+      "instruction_id": "01f13adc92a614608bdb5f399e7b4c2e",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "What findings were documented on the {project_keyword} project?",
+      "content": "SELECT\n  p.project_name,\n  p.report_id,\n  f.defect_type,\n  f.severity,\n  f.safety_risk,\n  f.cause_of_deterioration,\n  f.finding_description\nFROM mbi_demo.inspectiq.project_assets      p\nJOIN mbi_demo.inspectiq.inspection_findings f ON p.report_id = f.report_id\nWHERE p.project_name ILIKE CONCAT('%', :project_keyword, '%')\nORDER BY\n  CASE f.severity\n    WHEN 'Critical' THEN 1\n    WHEN 'High'     THEN 2\n    WHEN 'Medium'   THEN 3\n    ELSE 4\n  END,\n  f.safety_risk DESC;",
+      "created_timestamp": 1776485445278,
+      "last_updated_timestamp": 1776485445278,
+      "instruction_type": "SQL_INSTRUCTION",
+      "parameters": [
+        {
+          "display_name": "project_keyword",
+          "keyword": "project_keyword",
+          "data_type": "HELIOS_TYPE_STRING",
+          "default_selection": {
+            "values": {
+              "data_type": "HELIOS_TYPE_STRING",
+              "values": [
+                {
+                  "value": "Parker"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13adcb7421547ab18d854b3dce35a",
+      "instruction_id": "01f13adcb7421547ab18d854b3dce35a",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "Show the monthly inspection trend for {year}, broken down by condition category.",
+      "content": "SELECT\n  DATE_FORMAT(inspection_date, 'yyyy-MM') AS month,\n  condition_category,\n  COUNT(*)                                AS inspections,\n  ROUND(AVG(condition_rating), 2)         AS avg_rating,\n  ROUND(SUM(estimated_repair_cost), 0)    AS total_repair_cost\nFROM mbi_demo.inspectiq.project_assets\nWHERE YEAR(inspection_date) = :year\nGROUP BY month, condition_category\nORDER BY month, condition_category;",
+      "created_timestamp": 1776485506699,
+      "last_updated_timestamp": 1776485506699,
+      "instruction_type": "SQL_INSTRUCTION",
+      "parameters": [
+        {
+          "display_name": "year",
+          "keyword": "year",
+          "data_type": "HELIOS_TYPE_STRING",
+          "default_selection": {
+            "values": {
+              "data_type": "HELIOS_TYPE_STRING",
+              "values": [
+                {
+                  "value": "2024"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13ade31fe16ecbcd5245a33a70ad5",
+      "instruction_id": "01f13ade31fe16ecbcd5245a33a70ad5",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "SQL Function",
+      "content": "mbi_demo.inspectiq.get_asset_overview",
+      "created_timestamp": 1776486142110,
+      "last_updated_timestamp": 1776486142110,
+      "instruction_type": "CERTIFIED_ANSWER",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13ade40901eb4a53fd81daf9709fa",
+      "instruction_id": "01f13ade40901eb4a53fd81daf9709fa",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "SQL Function",
+      "content": "mbi_demo.inspectiq.get_overdue_exposure_by_state",
+      "created_timestamp": 1776486166558,
+      "last_updated_timestamp": 1776486166558,
+      "instruction_type": "CERTIFIED_ANSWER",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13ade458a178bbd1fee27b4e8ee56",
+      "instruction_id": "01f13ade458a178bbd1fee27b4e8ee56",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "SQL Function",
+      "content": "mbi_demo.inspectiq.get_findings_for_project",
+      "created_timestamp": 1776486174905,
+      "last_updated_timestamp": 1776486174905,
+      "instruction_type": "CERTIFIED_ANSWER",
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    },
+    {
+      "id": "01f13c7f535c1f028573dd68f1cba83b",
+      "instruction_id": "01f13c7f535c1f028573dd68f1cba83b",
+      "data_room_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "space_id": "01f136b9ff581743a3f50f0701d52bfd",
+      "title": "What's Pennsylvania's exposure?",
+      "content": "SELECT\n    state,\n    COUNT(*)                                 AS overdue_assets,\n    ROUND(AVG(days_overdue), 0)              AS avg_days_overdue,\n    ROUND(SUM(estimated_repair_cost)/1e6, 1) AS exposure_millions,\n    SUM(CAST(safety_flagged AS INT))         AS safety_flagged_count,\n    SUM(CASE WHEN condition_category = 'Critical' THEN 1 ELSE 0 END) AS critical_count\n  FROM mbi_demo.inspectiq.project_assets\n  WHERE state = :state_code\n    AND overdue = true\n  GROUP BY state; ",
+      "created_timestamp": 1776665298230,
+      "last_updated_timestamp": 1776665298230,
+      "instruction_type": "SQL_INSTRUCTION",
+      "parameters": [
+        {
+          "display_name": "state_code",
+          "keyword": "state_code",
+          "data_type": "HELIOS_TYPE_STRING",
+          "default_selection": {
+            "values": {
+              "data_type": "HELIOS_TYPE_STRING",
+              "values": [
+                {
+                  "value": "NJ"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "use_as_tool": false,
+      "instruction_status": "INSTRUCTION_STATUS_UNSPECIFIED"
+    }
+  ]
+}

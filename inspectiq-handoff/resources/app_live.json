@@ -1,0 +1,44 @@
+{
+  "active_deployment": {
+    "create_time":"2026-04-20T04:18:47Z",
+    "creator":"emily.liu@databricks.com",
+    "deployment_artifacts": {
+      "source_code_path":"/Workspace/Users/5bc0e1d9-df04-49c7-80d7-aaab32997b38/src/01f13c70072319a9a57ddf4d770de72e"
+    },
+    "deployment_id":"01f13c70072319a9a57ddf4d770de72e",
+    "mode":"SNAPSHOT",
+    "source_code_path":"/Workspace/Users/emily.liu@databricks.com/inspectiq-demo2/app",
+    "status": {
+      "message":"App started successfully",
+      "state":"SUCCEEDED"
+    },
+    "update_time":"2026-04-20T04:19:31Z"
+  },
+  "app_status": {
+    "message":"App has status: App is running",
+    "state":"RUNNING"
+  },
+  "compute_status": {
+    "message":"App compute is running.",
+    "state":"ACTIVE"
+  },
+  "create_time":"2026-04-07T02:49:46Z",
+  "creator":"emily.liu@databricks.com",
+  "default_source_code_path":"/Workspace/Users/emily.liu@databricks.com/inspectiq-demo2/app",
+  "description":"InspectIQ — Michael Baker International Infrastructure Knowledge Assistant",
+  "effective_budget_policy_id":"5b62fa02-8671-46d3-96ac-64c1725dc9d9",
+  "effective_user_api_scopes": [
+    "iam.current-user:read",
+    "iam.access-control:read"
+  ],
+  "id":"5bc0e1d9-df04-49c7-80d7-aaab32997b38",
+  "name":"inspectiq-mbi",
+  "oauth2_app_client_id":"e5f5a3a1-d64f-4187-b685-38044ae90f61",
+  "oauth2_app_integration_id":"e5f5a3a1-d64f-4187-b685-38044ae90f61",
+  "service_principal_client_id":"5bc0e1d9-df04-49c7-80d7-aaab32997b38",
+  "service_principal_id":70691417026876,
+  "service_principal_name":"app-40zbx9 inspectiq-mbi",
+  "update_time":"2026-04-20T04:18:47Z",
+  "updater":"emily.liu@databricks.com",
+  "url":"https://inspectiq-mbi-1444828305810485.aws.databricksapps.com"
+}

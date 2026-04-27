@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-mbi-light text-gray-800 font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-mbi-navy text-white px-4 py-2 rounded-lg hover:bg-mbi-steel transition-colors font-medium;
+  }
+  .btn-orange {
+    @apply bg-mbi-orange text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-4;
+  }
+}
+
+/* Streaming cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: #e87722;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f0f4f8; }
+::-webkit-scrollbar-thumb { background: #4a6278; border-radius: 3px; }
+
+/* ---------------------------------------------------------------------------
+   Print stylesheet — used by the Inspection Report Drafter's "Export PDF"
+   button. Activated by adding `.inspectiq-printing` to <body> before calling
+   window.print(). Hides everything except the report preview document so the
+   browser's built-in "Save as PDF" produces a clean, branded output.
+   --------------------------------------------------------------------------- */
+@media print {
+  body.inspectiq-printing * { visibility: hidden !important; }
+  body.inspectiq-printing #inspectiq-print-target,
+  body.inspectiq-printing #inspectiq-print-target * {
+    visibility: visible !important;
+  }
+  body.inspectiq-printing #inspectiq-print-target {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 24px 36px !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+  /* Prevent page breaks inside tables */
+  body.inspectiq-printing #inspectiq-print-target table {
+    page-break-inside: avoid;
+  }
+  @page { margin: 0.4in; size: letter; }
+}
+
+/* Markdown rendering for agent tool responses */
+.markdown-body h1 { @apply text-lg font-bold text-mbi-navy mt-4 mb-2; }
+.markdown-body h2 { @apply text-base font-bold text-mbi-navy mt-3 mb-2; }
+.markdown-body h3 { @apply text-sm font-bold text-mbi-navy mt-3 mb-1.5; }
+.markdown-body p  { @apply mb-2 leading-relaxed; }
+.markdown-body ul { @apply list-disc pl-5 mb-3 space-y-1; }
+.markdown-body ol { @apply list-decimal pl-5 mb-3 space-y-1; }
+.markdown-body li { @apply leading-relaxed; }
+.markdown-body strong { @apply font-semibold text-gray-900; }
+.markdown-body em { @apply italic text-gray-700; }
+.markdown-body code {
+  @apply bg-gray-100 text-mbi-navy font-mono text-[12px] px-1.5 py-0.5 rounded;
+}
+.markdown-body pre {
+  @apply bg-slate-900 text-slate-100 rounded-lg px-4 py-3 overflow-x-auto text-xs font-mono mb-3;
+}
+.markdown-body pre code { @apply bg-transparent text-slate-100 p-0; }
+.markdown-body a { @apply text-mbi-orange underline; }
+.markdown-body blockquote {
+  @apply border-l-4 border-mbi-orange pl-3 italic text-gray-600 my-2;
+}
+.markdown-body hr { @apply my-4 border-gray-200; }
+
+/* Tables */
+.markdown-body table {
+  @apply w-full border border-gray-200 rounded-lg overflow-hidden text-sm my-3;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.markdown-body thead { @apply bg-mbi-navy text-white; }
+.markdown-body th {
+  @apply px-3 py-2 text-left font-semibold text-[11px] uppercase tracking-wide;
+}
+.markdown-body td {
+  @apply px-3 py-2 border-t border-gray-100 align-top;
+}
+.markdown-body tbody tr:nth-child(even) { @apply bg-gray-50; }
+.markdown-body tbody tr:hover { @apply bg-orange-50; }

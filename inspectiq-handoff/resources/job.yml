@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    inspectiq_setup:
+      name: inspectiq-setup
+      description: >-
+        Orchestrates the one-time InspectIQ demo build. Generates source data,
+        runs the DLT pipeline, builds UC metric views, ingests PDFs into a Vector
+        Search index, and registers the Knowledge Assistant + Supervisor agents.
+      tasks:
+        - task_key: generate_pdfs
+          notebook_task:
+            notebook_path: ../notebooks/01_generate_inspection_pdfs.py
+
+        - task_key: generate_source_data
+          depends_on:
+            - task_key: generate_pdfs
+          notebook_task:
+            notebook_path: ../notebooks/02a_generate_source_data.py
+
+        - task_key: dlt_pipeline
+          depends_on:
+            - task_key: generate_source_data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.inspectiq_dlt.id}
+
+        - task_key: metric_views
+          depends_on:
+            - task_key: dlt_pipeline
+          notebook_task:
+            notebook_path: ../notebooks/02d_create_metric_views.py
+
+        - task_key: rag_pipeline
+          depends_on:
+            - task_key: metric_views
+          notebook_task:
+            notebook_path: ../notebooks/03_rag_pipeline.py
+
+        - task_key: knowledge_assistant
+          depends_on:
+            - task_key: rag_pipeline
+          notebook_task:
+            notebook_path: ../notebooks/04_knowledge_assistant.py
+
+        - task_key: supervisor_agent
+          depends_on:
+            - task_key: knowledge_assistant
+          notebook_task:
+            notebook_path: ../notebooks/05_supervisor_agent.py

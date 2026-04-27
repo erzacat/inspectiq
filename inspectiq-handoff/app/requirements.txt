@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+httpx
+databricks-sdk
+mlflow>=2.16

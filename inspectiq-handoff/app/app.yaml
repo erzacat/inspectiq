@@ -1,0 +1,23 @@
+command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: AGENT_ENDPOINT
+    value: "https://e2-demo-field-eng.cloud.databricks.com/serving-endpoints/mbi-inspectiq-supervisor/invocations"
+  # Flip to "true" to route the AI Assistant chat through the deployed supervisor agent
+  # instead of the in-app RAG+SQL router. "false" keeps current behavior.
+  - name: USE_SUPERVISOR
+    value: "false"
+  - name: MLFLOW_EXPERIMENT_ID
+    value: "2776229023959006"
+  - name: MLFLOW_TRACKING_URI
+    value: "databricks"
+
+resources:
+  - name: sql-warehouse
+    sql_warehouse:
+      id: "4b9b953939869799"
+      permission: "CAN_USE"
+  - name: serving-endpoint
+    serving_endpoint:
+      name: "databricks-claude-sonnet-4-5"
+      permission: "CAN_QUERY"
